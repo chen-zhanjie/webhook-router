@@ -1,0 +1,59 @@
+server:
+  listen: ":8080"
+  read_timeout: "10s"
+  write_timeout: "0s"
+  shutdown_timeout: "10s"
+  max_body_bytes: 1048576
+
+sse:
+  heartbeat_interval: "15s"
+  connection_buffer_size: 64
+  slow_client_policy: "disconnect"
+
+redis:
+  addr: "127.0.0.1:6379"
+  username: ""
+  password: ""
+  db: 0
+  key_prefix: "relay"
+  stream_max_len: 10000
+
+queue:
+  type: "redis_stream"
+
+cache:
+  type: "redis_stream"
+  max_events_per_app: 10000
+  ttl: "24h"
+
+log:
+  level: "info"
+  format: "json"
+
+channels:
+  - id: gewe-main
+    secret: "channel-secret"
+    enabled: true
+
+apps:
+  - id: hermes-prod
+    token: "app-token"
+    enabled: true
+    delivery:
+      sse:
+        enabled: true
+      callback:
+        enabled: false
+        url: ""
+        secret: ""
+        timeout: "10s"
+        max_attempts: 5
+        initial_backoff: "1s"
+        max_backoff: "60s"
+
+routes:
+  - id: gewe-to-hermes
+    channel: gewe-main
+    app: hermes-prod
+    enabled: true
+

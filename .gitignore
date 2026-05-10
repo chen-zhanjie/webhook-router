@@ -1,0 +1,14 @@
+# Local runtime config and secrets
+config.yaml
+webhook-router/config.yaml
+
+# Build outputs
+webhook-router/webhook-router
+webhook-router/bin/
+dist/
+
+# OS/editor noise
+.DS_Store
+.idea/
+.vscode/
+
