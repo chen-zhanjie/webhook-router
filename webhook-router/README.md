@@ -62,3 +62,22 @@ docker run --rm \
 
 Production configuration should be mounted from outside the image. Upgrade by replacing the image/container while reusing the existing `config.yaml` and Redis instance.
 
+## Deploy
+
+This repository includes a local-build deployment script for the 1Panel server:
+
+```bash
+./deploy.sh init
+./deploy.sh deploy
+```
+
+The script builds `webhook-router:latest` locally for `linux/amd64`, streams the image to `root@120.79.241.27`, and restarts the remote Docker Compose service in `/opt/webhook-router`.
+
+The remote `config.yaml` is created only when missing and is never overwritten during upgrades. Edit `/opt/webhook-router/config.yaml` on the server before the first real deployment.
+
+If Redis runs on the server host, use this Redis address from inside the container:
+
+```yaml
+redis:
+  addr: "host.docker.internal:6379"
+```

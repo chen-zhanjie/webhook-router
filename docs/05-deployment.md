@@ -58,6 +58,22 @@ docker run --rm \
   --config /app/config.yaml
 ```
 
+当前项目提供本地构建部署脚本：
+
+```bash
+cd webhook-router
+./deploy.sh deploy
+```
+
+脚本会在本地构建 `linux/amd64` 镜像，传输到 `root@120.79.241.27`，并在服务器 `/opt/webhook-router` 下通过 Docker Compose 重启容器。服务器上的 `config.yaml` 只在不存在时初始化，后续部署不会覆盖。
+
+如果 Redis 运行在服务器宿主机或 1Panel 管理的宿主机服务中，容器内访问地址通常应配置为：
+
+```yaml
+redis:
+  addr: "host.docker.internal:6379"
+```
+
 本地联调可使用 Redis 容器：
 
 ```bash
