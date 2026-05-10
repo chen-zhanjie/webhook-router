@@ -133,7 +133,16 @@ func (s *Server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 		streamIDs[app.ID] = id
 	}
-	s.log.Info("webhook accepted", "channel", channelID, "source_id", sourceID, "routes", len(routes), "apps", len(streamIDs))
+	s.log.Info("webhook accepted",
+		"channel", channelID,
+		"source_id", sourceID,
+		"routes", len(routes),
+		"apps", len(streamIDs),
+		"stream_ids", streamIDs,
+		"headers", base.Headers,
+		"body", base.Body,
+		"body_base64", base.BodyBase64,
+	)
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "source_id": sourceID, "stream_ids": streamIDs})
 }
 
