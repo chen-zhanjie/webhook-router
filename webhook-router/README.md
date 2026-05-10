@@ -1,19 +1,29 @@
 # webhook-router
 
-`webhook-router` is a lightweight Webhook routing service. It accepts third-party Webhook callbacks, writes events to Redis Stream per App, and delivers them through SSE and HTTP Callback.
+`webhook-router` is a lightweight Webhook routing service. It receives third-party Webhook callbacks, stores events in Redis Stream per App, and delivers events through SSE and HTTP Callback.
 
-## Features
+The service is intentionally generic. It does not parse WeChat, Gewe, Feishu, GitHub, or any business-specific payload. It validates, stores, routes, and forwards events.
 
-- Channel Webhook endpoint: `POST /webhooks/{channel_id}`
-- Channel secret via `X-Relay-Secret` or `?secret=...`
-- Redis Stream queue/cache per App: `relay:app:{app_id}:events`
-- SSE endpoint: `GET /apps/{app_id}/events?token=...`
-- Standard SSE `Last-Event-ID` replay
-- HTTP Callback delivery with `X-Relay-Callback-Secret`
-- Callback retry with exponential backoff
-- `/healthz` and `/stats`
+## What It Does
 
-## Run Locally
+- Receives Webhooks at `POST /webhooks/{channel_id}`
+- Authenticates Channel requests with `X-Relay-Secret` or `?secret=...`
+- Writes events to Redis Stream per App: `{key_prefix}:app:{app_id}:events`
+- Delivers events through SSE: `GET /apps/{app_id}/events`
+- Supports standard SSE `Last-Event-ID` replay
+- Delivers events through HTTP Callback
+- Retries failed Callback delivery with exponential backoff
+- Exposes `/healthz` and `/stats`
+- Supports Docker image replacement while reusing existing config and Redis
+
+## Documentation
+
+- [Developer Guide](./docs/developer-guide.md)
+- [Configuration Guide](./docs/configuration.md)
+- [HTTP API Reference](./docs/api.md)
+- [Deployment Guide](./docs/deployment.md)
+
+## Quick Start
 
 Start Redis:
 
@@ -43,6 +53,47 @@ curl -X POST 'http://localhost:18080/webhooks/gewe-main' \
   -d '{"hello":"world"}'
 ```
 
+Expected Webhook response:
+
+```json
+{
+  "ok": true,
+  "source_id": "src_01J00000000000000000000000",
+  "stream_ids": {
+    "hermes-prod": "1715330000000-0"
+  }
+}
+```
+
+Expected SSE event:
+
+```text
+id: 1715330000000-0
+event: webhook
+data: {"id":"1715330000000-0","source_id":"src_01J00000000000000000000000","channel":"gewe-main","received_at":"2026-05-10T12:00:00Z","headers":{},"body":{"hello":"world"}}
+```
+
+## Project Layout
+
+```text
+cmd/webhook-router/       CLI entrypoint
+internal/app/             app bootstrapping, graceful shutdown, cleanup worker
+internal/broker/          online SSE connection statistics
+internal/callback/        HTTP Callback worker and retry logic
+internal/config/          YAML config loading, defaults, validation, registry
+internal/event/           event model and body wrapping
+internal/server/          HTTP handlers for Webhook, SSE, health, stats
+internal/store/           Redis Stream access layer
+```
+
+## Build And Test
+
+```bash
+go test ./...
+go vet ./...
+go build ./cmd/webhook-router
+```
+
 ## Docker
 
 Build:
@@ -60,20 +111,19 @@ docker run --rm \
   webhook-router:latest
 ```
 
-Production configuration should be mounted from outside the image. Upgrade by replacing the image/container while reusing the existing `config.yaml` and Redis instance.
+Production configuration must be mounted from outside the image. Do not bake `config.yaml`, tokens, or secrets into the image.
 
 ## Deploy
 
-This repository includes a local-build deployment script for the 1Panel server:
+This repository includes a local-build deployment script for the current 1Panel server:
 
 ```bash
-./deploy.sh init
 ./deploy.sh deploy
 ```
 
 The script builds `webhook-router:latest` locally for `linux/amd64`, streams the image to `root@120.79.241.27`, and restarts the remote Docker Compose service in `/opt/webhook-router`.
 
-The remote `config.yaml` is created only when missing and is never overwritten during upgrades. Edit `/opt/webhook-router/config.yaml` on the server before the first real deployment.
+The remote `config.yaml` is created only when missing and is never overwritten during upgrades.
 
 On the current 1Panel server, Redis runs in Docker network `1panel-network` with the alias `redis`. The deployment script attaches `webhook-router` to that network, so the Redis address should be:
 
@@ -82,9 +132,5 @@ redis:
   addr: "redis:6379"
 ```
 
-If Redis runs directly on the server host instead, use this Redis address from inside the container:
+Redis password is configured only in `/opt/webhook-router/config.yaml` on the server. Do not commit production secrets.
 
-```yaml
-redis:
-  addr: "host.docker.internal:6379"
-```
