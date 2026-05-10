@@ -75,7 +75,14 @@ The script builds `webhook-router:latest` locally for `linux/amd64`, streams the
 
 The remote `config.yaml` is created only when missing and is never overwritten during upgrades. Edit `/opt/webhook-router/config.yaml` on the server before the first real deployment.
 
-If Redis runs on the server host, use this Redis address from inside the container:
+On the current 1Panel server, Redis runs in Docker network `1panel-network` with the alias `redis`. The deployment script attaches `webhook-router` to that network, so the Redis address should be:
+
+```yaml
+redis:
+  addr: "redis:6379"
+```
+
+If Redis runs directly on the server host instead, use this Redis address from inside the container:
 
 ```yaml
 redis:

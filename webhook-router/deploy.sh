@@ -62,20 +62,27 @@ services:
     volumes:
       - ./config.yaml:/app/config.yaml:ro
     command: ["--config", "/app/config.yaml"]
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    networks:
+      - 1panel-network
     healthcheck:
       test: ["CMD", "/app/webhook-router", "--version"]
       interval: 30s
       timeout: 5s
       retries: 3
+
+networks:
+  1panel-network:
+    external: true
 EOF
 
   echo "▶ 准备 config.yaml（如已存在则不覆盖）..."
   if remote "test -f '$DEPLOY_DIR/config.yaml'"; then
     echo "  config.yaml 已存在，保持不变"
   else
-    scp config.example.yaml "$SERVER:$DEPLOY_DIR/config.yaml"
+    TMP_CONFIG=$(mktemp)
+    sed 's/addr: "127.0.0.1:6379"/addr: "redis:6379"/' config.example.yaml > "$TMP_CONFIG"
+    scp "$TMP_CONFIG" "$SERVER:$DEPLOY_DIR/config.yaml"
+    rm -f "$TMP_CONFIG"
     echo "  已上传 config.example.yaml 为服务器 config.yaml"
     echo "  ⚠ 请登录服务器修改 $DEPLOY_DIR/config.yaml 中的 secret/token/redis 配置"
   fi
@@ -153,4 +160,3 @@ echo ""
 echo "================================================"
 echo " 完成！"
 echo "================================================"
-

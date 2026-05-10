@@ -67,7 +67,14 @@ cd webhook-router
 
 脚本会在本地构建 `linux/amd64` 镜像，传输到 `root@120.79.241.27`，并在服务器 `/opt/webhook-router` 下通过 Docker Compose 重启容器。服务器上的 `config.yaml` 只在不存在时初始化，后续部署不会覆盖。
 
-如果 Redis 运行在服务器宿主机或 1Panel 管理的宿主机服务中，容器内访问地址通常应配置为：
+当前 1Panel 服务器上的 Redis 位于 Docker 网络 `1panel-network`，并带有网络别名 `redis`。部署脚本会把 `webhook-router` 加入该网络，因此 Redis 地址应配置为：
+
+```yaml
+redis:
+  addr: "redis:6379"
+```
+
+如果 Redis 运行在服务器宿主机，容器内访问地址通常应配置为：
 
 ```yaml
 redis:
