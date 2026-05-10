@@ -22,7 +22,7 @@ webhook-router --config ./config.yaml
 
 ```yaml
 server:
-  listen: ":8080"
+  listen: ":18080"
   read_timeout: "10s"
   write_timeout: "0s"
   shutdown_timeout: "10s"
@@ -87,7 +87,7 @@ routes:
 
 | 字段 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `listen` | string | `":8080"` | HTTP 监听地址 |
+| `listen` | string | `":18080"` | HTTP 监听地址 |
 | `read_timeout` | duration | `10s` | HTTP 读取超时 |
 | `write_timeout` | duration | `0s` | HTTP 写入超时，SSE 场景建议不设置固定写超时 |
 | `shutdown_timeout` | duration | `10s` | 优雅退出等待时间 |

@@ -31,13 +31,13 @@ go run ./cmd/webhook-router --config ./config.yaml
 Open an SSE connection:
 
 ```bash
-curl -N 'http://localhost:8080/apps/hermes-prod/events?token=app-token'
+curl -N 'http://localhost:18080/apps/hermes-prod/events?token=app-token'
 ```
 
 Send a Webhook:
 
 ```bash
-curl -X POST 'http://localhost:8080/webhooks/gewe-main' \
+curl -X POST 'http://localhost:18080/webhooks/gewe-main' \
   -H 'X-Relay-Secret: channel-secret' \
   -H 'Content-Type: application/json' \
   -d '{"hello":"world"}'
@@ -55,7 +55,7 @@ Run:
 
 ```bash
 docker run --rm \
-  -p 8080:8080 \
+  -p 18080:18080 \
   -v "$PWD/config.yaml:/app/config.yaml:ro" \
   webhook-router:latest
 ```

@@ -58,7 +58,7 @@ services:
     container_name: webhook-router
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "18080:18080"
     volumes:
       - ./config.yaml:/app/config.yaml:ro
     command: ["--config", "/app/config.yaml"]

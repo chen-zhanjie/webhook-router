@@ -168,7 +168,7 @@ func NewRegistry(cfg Config) (*Registry, error) {
 func defaultConfig() Config {
 	return Config{
 		Server: ServerConfig{
-			Listen:          ":8080",
+			Listen:          ":18080",
 			ReadTimeout:     Duration{10 * time.Second},
 			WriteTimeout:    Duration{0},
 			ShutdownTimeout: Duration{10 * time.Second},

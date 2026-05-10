@@ -13,7 +13,7 @@ RUN addgroup -S app && adduser -S app -G app
 WORKDIR /app
 COPY --from=build /out/webhook-router /app/webhook-router
 USER app
-EXPOSE 8080
+EXPOSE 18080
 ENTRYPOINT ["/app/webhook-router"]
 CMD ["--config", "/app/config.yaml"]
 

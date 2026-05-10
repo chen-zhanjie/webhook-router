@@ -1,5 +1,5 @@
 server:
-  listen: ":8080"
+  listen: ":18080"
   read_timeout: "10s"
   write_timeout: "0s"
   shutdown_timeout: "10s"
