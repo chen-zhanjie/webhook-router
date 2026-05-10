@@ -74,6 +74,8 @@ redis:
   addr: "redis:6379"
 ```
 
+Redis 密码在服务器 `/opt/webhook-router/config.yaml` 中配置，不提交到仓库。
+
 如果 Redis 运行在服务器宿主机，容器内访问地址通常应配置为：
 
 ```yaml
@@ -163,3 +165,42 @@ GET /healthz
 - 如果要正式多实例部署，需要进一步明确 Consumer Group、App dispatcher 和连接归属策略
 - 第三方 Webhook 响应应尽快返回成功，消费应用投递失败、重试、指数退避由 Relay 内部策略处理
 - Docker 升级时应保持配置文件和 Redis 不变，替换应用容器即可
+
+## Nginx 反向代理
+
+Nginx / 1Panel OpenResty 反代目标：
+
+```text
+http://127.0.0.1:18080
+```
+
+示例：
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:18080;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_read_timeout 3600s;
+    proxy_send_timeout 3600s;
+}
+
+location /apps/ {
+    proxy_pass http://127.0.0.1:18080;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_buffering off;
+    proxy_cache off;
+    proxy_read_timeout 3600s;
+    proxy_send_timeout 3600s;
+    add_header X-Accel-Buffering no;
+}
+```
+
+`/apps/` 是 SSE 长连接路径，必须关闭代理缓冲并设置较长超时。

@@ -34,7 +34,7 @@ sse:
   slow_client_policy: "disconnect"
 
 redis:
-  addr: "127.0.0.1:6379"
+  addr: "redis:6379"
   username: ""
   password: ""
   db: 0
@@ -117,6 +117,16 @@ MVP 按 App 建 Stream，key 格式为：
 ```text
 {key_prefix}:app:{app_id}:events
 ```
+
+当前 1Panel 部署中，`webhook-router` 容器加入 `1panel-network`，Redis 使用该网络中的别名 `redis`，因此线上配置应为：
+
+```yaml
+redis:
+  addr: "redis:6379"
+  password: "在服务器配置文件中填写"
+```
+
+Redis 密码只写入服务器 `/opt/webhook-router/config.yaml`，不要提交到仓库。
 
 ### queue
 
@@ -231,4 +241,77 @@ channels:
   - id: gewe-main
     secret: "${GEWE_MAIN_SECRET}"
     enabled: true
+```
+
+## 常见配置变更
+
+### 添加 Channel
+
+```yaml
+channels:
+  - id: gewe-test
+    secret: "replace-with-channel-secret"
+    enabled: true
+```
+
+第三方平台回调地址为：
+
+```text
+https://your-domain.com/webhooks/gewe-test
+```
+
+### 添加 SSE App
+
+```yaml
+apps:
+  - id: debug-client
+    token: "replace-with-app-token"
+    enabled: true
+    delivery:
+      sse:
+        enabled: true
+      callback:
+        enabled: false
+```
+
+SSE 连接地址为：
+
+```text
+https://your-domain.com/apps/debug-client/events?token=replace-with-app-token
+```
+
+### 添加 Callback App
+
+```yaml
+apps:
+  - id: crm-prod
+    enabled: true
+    delivery:
+      sse:
+        enabled: false
+      callback:
+        enabled: true
+        url: "https://crm.example.com/webhook/gewe"
+        secret: "replace-with-callback-secret"
+        timeout: "10s"
+        max_attempts: 5
+        initial_backoff: "1s"
+        max_backoff: "60s"
+```
+
+### 添加 Route
+
+```yaml
+routes:
+  - id: gewe-main-to-debug-client
+    channel: gewe-main
+    app: debug-client
+    enabled: true
+```
+
+修改配置后重启容器：
+
+```bash
+cd /opt/webhook-router
+docker compose restart webhook-router
 ```

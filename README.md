@@ -33,6 +33,7 @@
 - [HTTP API 设计](./docs/03-api.md)
 - [配置文件设计](./docs/04-configuration.md)
 - [部署与运行](./docs/05-deployment.md)
+- [应用接入指南](./docs/07-integration-guide.md)
 - [开发路线图](./docs/06-roadmap.md)
 - [待确认问题](./docs/99-open-questions.md)
 

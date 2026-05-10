@@ -300,6 +300,38 @@ GET /healthz
 }
 ```
 
+## 对接 URL 汇总
+
+假设 Nginx 反代域名为：
+
+```text
+https://your-domain.com
+```
+
+第三方平台 Webhook 地址：
+
+```text
+https://your-domain.com/webhooks/{channel_id}
+```
+
+SSE 消费地址：
+
+```text
+https://your-domain.com/apps/{app_id}/events?token={app_token}
+```
+
+健康检查地址，仅建议内网或受保护访问：
+
+```text
+https://your-domain.com/healthz
+```
+
+状态地址，仅建议内网或受保护访问：
+
+```text
+https://your-domain.com/stats
+```
+
 ## 运行信息接口
 
 MVP 可选提供只读状态接口，默认可不暴露公网或由反向代理保护。
