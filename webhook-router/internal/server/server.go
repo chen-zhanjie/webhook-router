@@ -18,6 +18,7 @@ import (
 	"github.com/chen-zhanjie/webhook-router/internal/callback"
 	"github.com/chen-zhanjie/webhook-router/internal/config"
 	"github.com/chen-zhanjie/webhook-router/internal/event"
+	"github.com/chen-zhanjie/webhook-router/internal/files"
 	"github.com/chen-zhanjie/webhook-router/internal/store"
 )
 
@@ -25,13 +26,14 @@ type Server struct {
 	reg     *config.Registry
 	store   *store.RedisStore
 	broker  *broker.Broker
+	files   *files.Manager
 	cbStats *callback.Stats
 	log     *slog.Logger
 	started time.Time
 }
 
-func New(reg *config.Registry, store *store.RedisStore, broker *broker.Broker, cbStats *callback.Stats, log *slog.Logger) *Server {
-	return &Server{reg: reg, store: store, broker: broker, cbStats: cbStats, log: log, started: time.Now()}
+func New(reg *config.Registry, store *store.RedisStore, broker *broker.Broker, fileManager *files.Manager, cbStats *callback.Stats, log *slog.Logger) *Server {
+	return &Server{reg: reg, store: store, broker: broker, files: fileManager, cbStats: cbStats, log: log, started: time.Now()}
 }
 
 func (s *Server) Router() http.Handler {
@@ -40,6 +42,8 @@ func (s *Server) Router() http.Handler {
 	r.Get("/stats", s.handleStats)
 	r.Post("/webhooks/{channel_id}", s.handleWebhook)
 	r.Get("/apps/{app_id}/events", s.handleSSE)
+	r.Post("/apps/{app_id}/files", s.handleFileUpload)
+	r.Get("/files/{file_id}/{filename}", s.handleFileDownload)
 	return r
 }
 
@@ -230,6 +234,39 @@ func (s *Server) handleSSE(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+}
+
+func (s *Server) handleFileUpload(w http.ResponseWriter, r *http.Request) {
+	appID := chi.URLParam(r, "app_id")
+	app, ok := s.reg.Apps[appID]
+	if !ok {
+		writeError(w, http.StatusNotFound, "app_not_found")
+		return
+	}
+	if !app.IsEnabled() {
+		writeError(w, http.StatusForbidden, "app_disabled")
+		return
+	}
+	if app.Token == "" {
+		writeError(w, http.StatusForbidden, "file_upload_not_configured")
+		return
+	}
+	if got := appToken(r); got != app.Token {
+		writeError(w, http.StatusUnauthorized, "invalid_app_token")
+		return
+	}
+	result, err := s.files.SaveMultipart(w, r)
+	if err != nil {
+		s.log.Warn("file upload failed", "app", appID, "error", err)
+		writeError(w, http.StatusBadRequest, "file_upload_failed")
+		return
+	}
+	s.log.Info("file uploaded", "app", appID, "path", result.Path, "size", result.Size, "expires_at", result.ExpiresAt)
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (s *Server) handleFileDownload(w http.ResponseWriter, r *http.Request) {
+	s.files.Serve(w, r, chi.URLParam(r, "file_id"), chi.URLParam(r, "filename"))
 }
 
 func (s *Server) replay(ctx context.Context, w http.ResponseWriter, flusher http.Flusher, appID, lastID string) (string, bool, error) {

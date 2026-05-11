@@ -34,6 +34,7 @@ type Config struct {
 	Redis    RedisConfig  `yaml:"redis"`
 	Queue    QueueConfig  `yaml:"queue"`
 	Cache    CacheConfig  `yaml:"cache"`
+	Files    FileConfig   `yaml:"files"`
 	Log      LogConfig    `yaml:"log"`
 	Channels []Channel    `yaml:"channels"`
 	Apps     []App        `yaml:"apps"`
@@ -71,6 +72,12 @@ type CacheConfig struct {
 	Type            string   `yaml:"type"`
 	MaxEventsPerApp int64    `yaml:"max_events_per_app"`
 	TTL             Duration `yaml:"ttl"`
+}
+
+type FileConfig struct {
+	StorageDir string   `yaml:"storage_dir"`
+	TTL        Duration `yaml:"ttl"`
+	MaxBytes   int64    `yaml:"max_bytes"`
 }
 
 type LogConfig struct {
@@ -186,6 +193,7 @@ func defaultConfig() Config {
 		},
 		Queue: QueueConfig{Type: "redis_stream"},
 		Cache: CacheConfig{Type: "redis_stream", MaxEventsPerApp: 10000, TTL: Duration{24 * time.Hour}},
+		Files: FileConfig{StorageDir: "/tmp/webhook-router-files", TTL: Duration{10 * time.Minute}, MaxBytes: 50 << 20},
 		Log:   LogConfig{Level: "info", Format: "json"},
 	}
 }
@@ -233,6 +241,15 @@ func applyDefaults(cfg *Config) {
 	}
 	if cfg.Cache.TTL.Duration == 0 {
 		cfg.Cache.TTL = def.Cache.TTL
+	}
+	if cfg.Files.StorageDir == "" {
+		cfg.Files.StorageDir = def.Files.StorageDir
+	}
+	if cfg.Files.TTL.Duration == 0 {
+		cfg.Files.TTL = def.Files.TTL
+	}
+	if cfg.Files.MaxBytes == 0 {
+		cfg.Files.MaxBytes = def.Files.MaxBytes
 	}
 	if cfg.Log.Level == "" {
 		cfg.Log.Level = def.Log.Level
@@ -288,6 +305,15 @@ func (r *Registry) validate() error {
 	}
 	if r.Config.Cache.TTL.Duration <= 0 {
 		errs = append(errs, errors.New("cache.ttl must be > 0"))
+	}
+	if r.Config.Files.StorageDir == "" {
+		errs = append(errs, errors.New("files.storage_dir is required"))
+	}
+	if r.Config.Files.TTL.Duration <= 0 {
+		errs = append(errs, errors.New("files.ttl must be > 0"))
+	}
+	if r.Config.Files.MaxBytes <= 0 {
+		errs = append(errs, errors.New("files.max_bytes must be > 0"))
 	}
 
 	for _, ch := range r.Config.Channels {

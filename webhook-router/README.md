@@ -13,6 +13,7 @@ The service is intentionally generic. It does not parse WeChat, Gewe, Feishu, Gi
 - Supports standard SSE `Last-Event-ID` replay
 - Delivers events through HTTP Callback
 - Retries failed Callback delivery with exponential backoff
+- Lets Apps upload temporary files and returns directly accessible relative paths
 - Exposes `/healthz` and `/stats`
 - Supports Docker image replacement while reusing existing config and Redis
 
@@ -43,6 +44,15 @@ Open an SSE connection:
 ```bash
 curl -N 'http://localhost:18080/apps/hermes-prod/events?token=app-token'
 ```
+
+Upload a temporary file for an App:
+
+```bash
+curl -F 'file=@./example.jpg' \
+  'http://localhost:18080/apps/hermes-prod/files?token=app-token'
+```
+
+The response `path` can be opened directly on the same domain and expires after 10 minutes by default.
 
 Send a Webhook:
 
@@ -82,7 +92,8 @@ internal/broker/          online SSE connection statistics
 internal/callback/        HTTP Callback worker and retry logic
 internal/config/          YAML config loading, defaults, validation, registry
 internal/event/           event model and body wrapping
-internal/server/          HTTP handlers for Webhook, SSE, health, stats
+internal/files/           temporary App file upload, serving, and cleanup
+internal/server/          HTTP handlers for Webhook, SSE, files, health, stats
 internal/store/           Redis Stream access layer
 ```
 

@@ -26,6 +26,11 @@ cache:
   max_events_per_app: 10000
   ttl: "24h"
 
+files:
+  storage_dir: "/tmp/webhook-router-files"
+  ttl: "10m"
+  max_bytes: 52428800
+
 log:
   level: "info"
   format: "json"

@@ -124,6 +124,33 @@ X-Relay-Callback-Secret: replace-with-callback-secret
 
 The consumer app should compare this header with its configured secret.
 
+## Temporary File Hosting
+
+Temporary file hosting is configured globally. Apps authenticate uploads with their existing App token. Download URLs are public and expire automatically.
+
+```yaml
+files:
+  storage_dir: "/tmp/webhook-router-files"
+  ttl: "10m"
+  max_bytes: 52428800
+```
+
+Fields:
+
+| Field | Meaning | Default |
+| --- | --- | --- |
+| `storage_dir` | Local directory used to store temporary files and metadata | `/tmp/webhook-router-files` |
+| `ttl` | How long uploaded files remain available | `10m` |
+| `max_bytes` | Maximum upload size for one request | `52428800` |
+
+Upload URL for an App:
+
+```text
+https://your-domain.com/apps/debug-client/files?token=replace-with-app-token
+```
+
+Returned paths look like `/files/{file_id}/{filename}` and can be opened directly on the same domain.
+
 ## Add A Route
 
 ```yaml

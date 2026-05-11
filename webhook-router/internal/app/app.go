@@ -13,6 +13,7 @@ import (
 	"github.com/chen-zhanjie/webhook-router/internal/broker"
 	"github.com/chen-zhanjie/webhook-router/internal/callback"
 	"github.com/chen-zhanjie/webhook-router/internal/config"
+	"github.com/chen-zhanjie/webhook-router/internal/files"
 	"github.com/chen-zhanjie/webhook-router/internal/server"
 	"github.com/chen-zhanjie/webhook-router/internal/store"
 )
@@ -33,11 +34,16 @@ func Run(configPath, version string) error {
 	}
 
 	b := broker.New(reg.Config.SSE.ConnectionBuffer)
+	fileManager := files.New(reg.Config.Files, logger)
+	if err := fileManager.EnsureStorage(); err != nil {
+		return fmt.Errorf("prepare file storage: %w", err)
+	}
+	fileManager.StartCleanup(ctx.Done())
 	cbStats := callback.NewStats()
 	callback.New(redisStore, reg, logger, cbStats).Start(ctx)
 	startStreamCleanup(ctx, redisStore, reg, logger)
 
-	srv := server.New(reg, redisStore, b, cbStats, logger)
+	srv := server.New(reg, redisStore, b, fileManager, cbStats, logger)
 	httpServer := &http.Server{
 		Addr:         reg.Config.Server.Listen,
 		Handler:      srv.Router(),

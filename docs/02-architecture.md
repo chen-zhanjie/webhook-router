@@ -18,6 +18,7 @@ Third Party Platform
 |  Event Cache           |
 |  In-Memory Broker      |
 |  Delivery Adapter      |
+|  Temporary File Store  |
 |  SSE Handler           |
 |  Callback Worker       |
 +------------------------+

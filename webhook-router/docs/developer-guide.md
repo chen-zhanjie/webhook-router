@@ -33,6 +33,12 @@ GET /apps/{app_id}/events
 
 The online connection broker is currently used for connection statistics, not for event delivery. Keeping SSE delivery on Redis Stream avoids split-brain behavior between real-time push and replay.
 
+### Temporary File Hosting
+
+Apps can upload short-lived files through `POST /apps/{app_id}/files`. The handler reuses App token authentication, stores the file under `files.storage_dir`, writes a small `metadata.json` sidecar, and returns a relative `/files/{file_id}/{filename}` path.
+
+Downloads use `GET /files/{file_id}/{filename}` and are intentionally public. Expiry is enforced both on read and by a cleanup ticker that runs every minute. The default TTL is 10 minutes.
+
 ### HTTP Callback Delivery
 
 Callback delivery is handled by one worker goroutine per App with callback enabled.
@@ -117,7 +123,9 @@ Important behavior:
 
 ## Cleanup Worker
 
-`internal/app/cleanup.go` trims old Redis Stream entries using `cache.ttl`.
+``internal/app/cleanup.go` trims old Redis Stream entries using `cache.ttl`.
+
+`internal/files/manager.go` removes expired temporary upload directories once per minute and also deletes a file directory when a download discovers it is expired.
 
 It calculates a cutoff timestamp and calls `XTRIM MINID` approximately for each App Stream. This depends on Redis-generated Stream IDs, which encode millisecond time.
 
@@ -144,6 +152,7 @@ Known error codes include:
 - `app_disabled`
 - `invalid_app_token`
 - `sse_not_supported`
+- `file_upload_failed`
 
 ## Development Commands
 

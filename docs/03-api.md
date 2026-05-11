@@ -125,6 +125,61 @@ Content-Type: application/json
 - `invalid_body`
 - `internal_error`
 
+## 临时文件上传
+
+应用可以上传文件到 Relay 做临时托管。文件默认保留 10 分钟，上传成功后返回相对路径，可基于当前域名和端口直接访问。
+
+```http
+POST /apps/{app_id}/files?token=app-token
+```
+
+也支持 Bearer token：
+
+```http
+Authorization: Bearer app-token
+```
+
+请求体为 `multipart/form-data`，文件字段名固定为 `file`：
+
+```bash
+curl -F 'file=@./example.jpg' \
+  'https://your-domain.com/apps/debug-client/files?token=app-token'
+```
+
+成功响应：
+
+```json
+{
+  "ok": true,
+  "path": "/files/01j00000000000000000000000/example.jpg",
+  "expires_at": "2026-05-11T12:10:00Z",
+  "size": 12345,
+  "filename": "example.jpg"
+}
+```
+
+访问方式：
+
+```text
+https://your-domain.com/files/01j00000000000000000000000/example.jpg
+```
+
+错误码：
+
+- `app_not_found`
+- `app_disabled`
+- `invalid_app_token`
+- `file_upload_not_configured`
+- `file_upload_failed`
+
+## 临时文件下载
+
+```http
+GET /files/{file_id}/{filename}
+```
+
+下载接口不鉴权。过期或不存在返回 `404`。服务会设置 `Cache-Control: no-store`，并通过周期清理任务删除过期文件。
+
 ## HTTP Callback 投递
 
 MVP 支持将事件通过 HTTP Callback 投递给 App。Callback 是 Relay 到消费应用的出站请求，不影响第三方 Webhook 的本次成功响应。
